@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production & Sales Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+        }
+
+        header {
+            background: #0f172a;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .menu-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            font-size: 28px;
+            cursor: pointer;
+            color: white;
+            z-index: 1000;
+        }
+
+        .side-menu {
+            position: fixed;
+            top: 60px;
+            left: 10px;
+            background: white;
+            width: 200px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 999;
+        }
+
+        .side-menu a {
+            display: block;
+            padding: 12px;
+            text-decoration: none;
+            color: #0f172a;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .side-menu a:hover {
+            background: #f1f5f9;
+        }
+
+        .container {
+            width: 95%;
+            margin: auto;
+            margin-top: 100px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #0f172a;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .logout {
+            background: red;
+            float: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table th {
+            background: #0f172a;
+            color: white;
+            padding: 10px;
+        }
+
+        table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .flex {
+            display: flex;
+            gap: 20px;
+        }
+
+        .flex .card {
+            flex: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .login-box {
+            width: 350px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .summary-box {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+
+        .summary-box h3 {
+            color: #2563eb;
+            font-size: 28px;
+        }
+
+        #profitTotal {
+            color: green;
+        }
+
+        table {
+            display: block;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <header>Khushi Homecare</header>
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+
+    <div class="side-menu hidden" id="sideMenu">
+        <a onclick="showPage('home')">Home</a>
+        <a onclick="showPage('purchase')">Purchase</a>
+        <a onclick="showPage('sales')">Sales & Production</a>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="login-box" id="loginBox">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div class="container hidden" id="mainApp">
+        <button class="logout" onclick="logout()">Logout</button>
+        <button id="resetBtn" style="background:orange; float:right; margin-right:10px; display:none;" onclick="askReset()">
+            Reset Data
+        </button>
+
+        <h2 id="welcome"></h2>
+
+        <!-- HOME -->
+        <div id="homePage">
+
+            <button id="excelBtn" style="background:green; margin-bottom:20px; display:none;" onclick="exportExcel()">
+                Export Excel
+            </button>
+
+            <div class="summary">
+
+                <div class="summary-box">
+                    <h3 id="productionCostTotal">0</h3>
+                    <p>Total Production Cost</p>
+                </div>
+
+                <div class="summary-box">
+                    <h3 id="totalSalesAmount">0</h3>
+                    <p>Total Sales</p>
+                </div>
+
+                <div class="summary-box">
+                    <h3 id="profitTotal">0</h3>
+                    <p>Total Profit</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Stock Report</h2>
+                <table>
+                    <tbody id="homeStockTable"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Product Wise Profit</h2>
+                <table>
+                    <tbody id="productProfitTable"></tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- PURCHASE -->
+        <div id="purchasePage" class="hidden">
+            <div class="card">
+                <h2>Raw Material Purchase</h2>
+                <select id="rawItem">
+                    <option value="">Select Item</option>
+                    <option value="સ્લરી ૯૨%">સ્લરી ૯૨%</option>
+                    <option value="sels pest">sels pest</option>
+                    <option value="કોસ્ટિક સોડા">કોસ્ટિક સોડા</option>
+                    <option value="CBX પાવડર">CBX પાવડર</option>
+                    <option value="CAPB">CAPB</option>
+                    <option value="AOS">AOS</option>
+                    <option value="કલર">કલર</option>
+                    <option value="પરફ્યુમ">પરફ્યુમ</option>
+                    <option value="CDEA">CDEA</option>
+                    <option value="સોલ્ટ">સોલ્ટ</option>
+                    <option value="એમજામ">એમજામ</option>
+                    <option value="થિકનર પાવડર">થિકનર પાવડર</option>
+                    <option value="સીડીઈએ">સીડીઈએ</option>
+                </select>
+
+                <input type="number" id="rawQty" placeholder="Quantity">
+                <input type="number" id="rawCost" placeholder="Cost Per Unit">
+                <button onclick="addRawPurchase()">Add Purchase</button>
+            </div>
+
+            <div class="card">
+                <h2>Raw Material Usage</h2>
+                <select id="useItem">
+                    <option value="">Select Item</option>
+                    <option value="સ્લરી ૯૨%">સ્લરી ૯૨%</option>
+                    <option value="sels pest">sels pest</option>
+                    <option value="કોસ્ટિક સોડા">કોસ્ટિક સોડા</option>
+                    <option value="CBX પાવડર">CBX પાવડર</option>
+                    <option value="CAPB">CAPB</option>
+                    <option value="AOS">AOS</option>
+                    <option value="કલર">કલર</option>
+                    <option value="પરફ્યુમ">પરફ્યુમ</option>
+                    <option value="CDEA">CDEA</option>
+                    <option value="સોલ્ટ">સોલ્ટ</option>
+                    <option value="એમજામ">એમજામ</option>
+                    <option value="થિકનર પાવડર">થિકનર પાવડર</option>
+                    <option value="સીડીઈએ">સીડીઈએ</option>
+                </select>
+                <input type="number" id="useQty" placeholder="Quantity Used">
+                <button onclick="addRawUsage()">Add Usage</button>
+            </div>
+
+            <div class="card">
+                <h2>Raw Stock</h2>
+                <table>
+                    <tbody id="rawStockTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SALES -->
+        <div id="salesPage" class="hidden">
+            <div class="flex">
+                <div class="card">
+                    <h2>Production</h2>
+                    <select id="productionItem">
+                        <option value="">Select Item</option>
+                        <option value="સાબુ કપડાના">સાબુ કપડાના</option>
+                        <option value="ડિટરજન લિક્વિડ હાઈ">ડિટરજન લિક્વિડ હાઈ</option>
+                        <option value="ડિટર્જન લિક્વિડ લો">ડિટર્જન લિક્વિડ લો</option>
+                        <option value="ડિટર્જન લિક્વિડ રેગ્યુલર">ડિટર્જન લિક્વિડ રેગ્યુલર</option>
+                        <option value="ડીસ વોસ લિક્વિડ હાઈ">ડીસ વોસ લિક્વિડ હાઈ</option>
+                        <option value="ડીશ વોસ લિક્વીડ લો">ડીશ વોસ લિક્વીડ લો</option>
+                        <option value="ટોઇલેટ ક્લિનર">ટોઇલેટ ક્લિનર</option>
+                        <option value="બાથરૂમ ક્લિનર">બાથરૂમ ક્લિનર</option>
+                        <option value="ફિનાઇલ">ફિનાઇલ</option>
+                        <option value="એસિડ">એસિડ</option>
+                        <option value="બ્લીચીગ">બ્લીચીગ</option>
+                        <option value="કમ્ફર્ટ">કમ્ફર્ટ</option>
+                        <option value="ગ્લાસ ક્લિનર">ગ્લાસ ક્લિનર</option>
+                        <option value="હેન્ડ વૉસ">હેન્ડ વૉસ</option>
+                        <option value="વાસણ કુચા">વાસણ કુચા</option>
+                        <option value="સેમ્પુ">સેમ્પુ</option>
+                        <option value="નવાના સાબુ">નવાના સાબુ</option>
+                        <option value="પાવડર">પાવડર</option>
+                        <option value="પીતાંબરી">પીતાંબરી</option>
+                        <option value="ફિનાઇલ નાની">ફિનાઇલ નાની</option>
+                        <option value="ફિનાઇલ મોટી">ફિનાઇલ મોટી</option>
+                    </select>
+
+                    <input type="number" id="productionQty" placeholder="Product Production Quantity">
+                    <input type="number" id="productionCost" placeholder="Product Production Price">
+                    <button onclick="addProduction()">Save</button>
+                </div>
+
+                <div class="card">
+                    <h2>Sales</h2>
+
+                    <!-- FIXED ID -->
+                    <select id="saleItem">
+                        <option value="">Select Item</option>
+                        <option value="સાબુ કપડાના">સાબુ કપડાના</option>
+                        <option value="ડિટરજન લિક્વિડ હાઈ">ડિટરજન લિક્વિડ હાઈ</option>
+                        <option value="ડિટર્જન લિક્વિડ લો">ડિટર્જન લિક્વિડ લો</option>
+                        <option value="ડિટર્જન લિક્વિડ રેગ્યુલર">ડિટર્જન લિક્વિડ રેગ્યુલર</option>
+                        <option value="ડીસ વોસ લિક્વિડ હાઈ">ડીસ વોસ લિક્વિડ હાઈ</option>
+                        <option value="ડીશ વોસ લિક્વીડ લો">ડીશ વોસ લિક્વીડ લો</option>
+                        <option value="ટોઇલેટ ક્લિનર">ટોઇલેટ ક્લિનર</option>
+                        <option value="બાથરૂમ ક્લિનર">બાથરૂમ ક્લિનર</option>
+                        <option value="ફિનાઇલ">ફિનાઇલ</option>
+                        <option value="એસિડ">એસિડ</option>
+                        <option value="બ્લીચીગ">બ્લીચીગ</option>
+                        <option value="કમ્ફર્ટ">કમ્ફર્ટ</option>
+                        <option value="ગ્લાસ ક્લિનર">ગ્લાસ ક્લિનર</option>
+                        <option value="હેન્ડ વૉસ">હેન્ડ વૉસ</option>
+                        <option value="વાસણ કુચા">વાસણ કુચા</option>
+                        <option value="સેમ્પુ">સેમ્પુ</option>
+                        <option value="નવાના સાબુ">નવાના સાબુ</option>
+                        <option value="પાવડર">પાવડર</option>
+                        <option value="પીતાંબરી">પીતાંબરી</option>
+                        <option value="ફિનાઇલ નાની">ફિનાઇલ નાની</option>
+                        <option value="ફિનાઇલ મોટી">ફિનાઇલ મોટી</option>
+                    </select>
+
+                    <input type="number" id="saleQty" placeholder="Product Sale Quantity">
+                    <input type="number" id="salePrice" placeholder="Product Sale Price">
+                    <button onclick="addSale()">Save</button>
+                </div>
+
+            </div>
+
+            <div class="card">
+                <h2>Stock</h2>
+                <table>
+                    <tbody id="salesStockTable"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Sales Report</h2>
+                <table>
+                    <tbody id="salesTable"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Production Report</h2>
+                <table>
+                    <tbody id="productionTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const users = [{
+                username: "admin",
+                password: "admin",
+                role: "admin"
+            },
+            {
+                username: "Nitin",
+                password: "Nitin123",
+                role: "user"
+            }
+        ];
+
+        let stock = JSON.parse(localStorage.getItem("stock")) || {};
+        let sales = JSON.parse(localStorage.getItem("sales")) || [];
+        let productions = JSON.parse(localStorage.getItem("productions")) || [];
+
+        let rawPurchases = JSON.parse(localStorage.getItem("rawPurchases")) || [];
+        let rawUsage = JSON.parse(localStorage.getItem("rawUsage")) || [];
+        let rawStock = JSON.parse(localStorage.getItem("rawStock")) || {};
+
+        let currentUser = null;
+
+        // Keep button click to show menu
+        function toggleMenu() {
+            const menu = document.getElementById("sideMenu");
+            menu.classList.remove("hidden"); // always show on button click
+        }
+
+        // Hide menu when mouse leaves the menu area
+        document.getElementById("sideMenu").addEventListener("mouseleave", () => {
+            document.getElementById("sideMenu").classList.add("hidden");
+        });
+
+        function showPage(page) {
+            document.getElementById("homePage").classList.add("hidden");
+            document.getElementById("purchasePage").classList.add("hidden");
+            document.getElementById("salesPage").classList.add("hidden");
+
+            document.getElementById(page + "Page").classList.remove("hidden");
+            renderAll();
+        }
+
+        function login() {
+            let u = document.getElementById("username").value;
+            let p = document.getElementById("password").value;
+
+            let user = users.find(x => x.username === u && x.password === p);
+
+            if (!user) return alert("Invalid login");
+
+            currentUser = user;
+
+            document.getElementById("loginBox").classList.add("hidden");
+            document.getElementById("mainApp").classList.remove("hidden");
+            document.getElementById("welcome").innerText = "Welcome " + user.username;
+            document.getElementById("resetBtn").style.display =
+                (user.role === "admin") ? "inline-block" : "none";
+            document.getElementById("excelBtn").style.display =
+                (user.role === "admin") ? "inline-block" : "none";
+            showPage("home");
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        /* Production */
+        function addProduction() {
+            let item = document.getElementById("productionItem").value;
+            let qty = +document.getElementById("productionQty").value;
+            let cost = +document.getElementById("productionCost").value;
+
+            stock[item] = (stock[item] || 0) + qty;
+
+            productions.push({
+                item,
+                qty,
+                cost,
+                user: currentUser.username
+            });
+
+            save();
+            renderAll();
+
+            /* RESET FIELDS */
+            document.getElementById("productionItem").value = "";
+            document.getElementById("productionQty").value = "";
+            document.getElementById("productionCost").value = "";
+        }
+
+        function askReset() {
+            let password = prompt("Enter admin password to reset all data:");
+
+            // always take password from admin user
+            let adminUser = users.find(u => u.username === "admin");
+            let correctPassword = adminUser ? adminUser.password : null;
+            if (password === correctPassword) {
+
+                if (confirm("Are you sure? This will DELETE ALL DATA permanently!")) {
+
+                    stock = {};
+                    sales = [];
+                    productions = [];
+                    rawPurchases = [];
+                    rawUsage = [];
+                    rawStock = {};
+
+                    save(); // keep localStorage synced
+
+                    alert("All data has been reset!");
+
+                    renderAll(); // stay logged in + refresh UI
+                }
+
+            } else if (password !== null) {
+                alert("Wrong password!");
+            }
+        }
+
+        /* Sales FIXED */
+        function addSale() {
+            let item = document.getElementById("saleItem").value;
+            let qty = +document.getElementById("saleQty").value;
+            let price = +document.getElementById("salePrice").value;
+
+            if ((stock[item] || 0) < qty) return alert("Not enough stock");
+
+            stock[item] -= qty;
+
+            sales.push({
+                item,
+                qty,
+                price
+            });
+
+            save();
+            renderAll();
+
+            /* RESET FIELDS */
+            document.getElementById("saleItem").value = "";
+            document.getElementById("saleQty").value = "";
+            document.getElementById("salePrice").value = "";
+        }
+
+        function addRawPurchase() {
+
+            let item =
+                document.getElementById("rawItem").value;
+
+            let qty = +document.getElementById("rawQty").value;
+
+            let cost = +document.getElementById("rawCost").value;
+
+            if (!item || qty <= 0 || cost <= 0) {
+                alert("Enter valid values");
+                return;
+            }
+
+            rawStock[item] =
+                (rawStock[item] || 0) + qty;
+
+            rawPurchases.push({
+                item,
+                qty,
+                cost
+            });
+
+            save();
+            renderAll();
+
+            document.getElementById("rawItem").value = "";
+            document.getElementById("rawQty").value = "";
+            document.getElementById("rawCost").value = "";
+        }
+
+        function addRawUsage() {
+
+            let item =
+                document.getElementById("useItem").value;
+
+            let qty = +document.getElementById("useQty").value;
+
+            if (!item || qty <= 0) {
+                alert("Enter valid values");
+                return;
+            }
+
+            if ((rawStock[item] || 0) < qty) {
+                alert("Not enough raw stock");
+                return;
+            }
+
+            rawStock[item] -= qty;
+
+            rawUsage.push({
+                item,
+                qty
+            });
+
+            save();
+
+            renderAll();
+
+            document.getElementById("useItem").value = "";
+            document.getElementById("useQty").value = "";
+        }
+
+        /* SAVE */
+        function save() {
+
+            localStorage.setItem("stock", JSON.stringify(stock));
+            localStorage.setItem("sales", JSON.stringify(sales));
+            localStorage.setItem("productions", JSON.stringify(productions));
+            localStorage.setItem("rawPurchases",
+                JSON.stringify(rawPurchases));
+            localStorage.setItem("rawUsage",
+                JSON.stringify(rawUsage));
+            localStorage.setItem("rawStock",
+                JSON.stringify(rawStock));
+        }
+
+        /* RENDER SAFE FIX */
+        function renderAll() {
+
+            /* SUMMARY */
+            let revenue =
+                sales.reduce((a, b) => a + (b.qty * b.price), 0);
+
+            let cost =
+                productions.reduce((a, b) => a + (b.qty * b.cost), 0);
+
+            document.getElementById("productionCostTotal").innerText =
+                cost;
+            document.getElementById("totalSalesAmount").innerText =
+                sales.reduce((a, b) => a + (b.qty * b.price), 0);
+
+            document.getElementById("profitTotal").innerText =
+                revenue - cost;
+
+            /* STOCK TABLE */
+            /* STOCK TABLE */
+
+            let allProducts = [
+                "સાબુ કપડાના",
+                "ડિટરજન લિક્વિડ હાઈ",
+                "ડિટર્જન લિક્વિડ લો",
+                "ડિટર્જન લિક્વિડ રેગ્યુલર",
+                "ડીસ વોસ લિક્વિડ હાઈ",
+                "ડીશ વોસ લિક્વીડ લો",
+                "ટોઇલેટ ક્લિનર",
+                "બાથરૂમ ક્લિનર",
+                "ફિનાઇલ",
+                "એસિડ",
+                "બ્લીચીગ",
+                "કમ્ફર્ટ",
+                "ગ્લાસ ક્લિનર",
+                "હેન્ડ વૉસ",
+                "વાસણ કુચા",
+                "સેમ્પુ",
+                "નવાના સાબુ",
+                "પાવડર",
+                "પીતાંબરી",
+                "ફિનાઇલ નાની",
+                "ફિનાઇલ મોટી"
+            ];
+
+            let stockHTML =
+                "<tr><th>Item</th><th>Qty</th></tr>";
+
+            allProducts.forEach(item => {
+
+                let qty = stock[item] || 0;
+
+                stockHTML += `
+    <tr>
+        <td>${item}</td>
+        <td>${qty}</td>
+    </tr>
+    `;
+            });
+
+            document.getElementById("homeStockTable").innerHTML =
+                stockHTML;
+
+            document.getElementById("salesStockTable").innerHTML =
+                stockHTML;
+
+            /* RAW STOCK TABLE */
+
+            let allRawMaterials = [
+                "સ્લરી ૯૨%",
+                "sels pest",
+                "કોસ્ટિક સોડા",
+                "CBX પાવડર",
+                "CAPB",
+                "AOS",
+                "કલર",
+                "પરફ્યુમ",
+                "CDEA",
+                "સોલ્ટ",
+                "એમજામ",
+                "થિકનર પાવડર",
+                "સીડીઈએ"
+            ];
+
+            let rawHTML =
+                "<tr><th>Raw Item</th><th>Qty</th></tr>";
+
+            allRawMaterials.forEach(item => {
+
+                let qty = rawStock[item] || 0;
+
+                rawHTML += `
+    <tr>
+        <td>${item}</td>
+        <td>${qty}</td>
+    </tr>
+    `;
+            });
+
+            document.getElementById("rawStockTable").innerHTML =
+                rawHTML;
+
+            /* SALES REPORT */
+            let salesHTML =
+                "<tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>";
+
+            sales.forEach(s => {
+
+                salesHTML += `
+            <tr>
+                <td>${s.item}</td>
+                <td>${s.qty}</td>
+                <td>${s.price}</td>
+                <td>${s.qty * s.price}</td>
+            </tr>
+        `;
+            });
+
+            document.getElementById("salesTable").innerHTML =
+                salesHTML;
+
+            /* PRODUCTION REPORT */
+            /* PRODUCTION REPORT */
+            let prodHTML =
+                "<tr><th>Item</th><th>Qty</th><th>Cost</th><th>Total</th></tr>";
+
+            productions.forEach(p => {
+
+                let total = p.qty * p.cost;
+
+                prodHTML += `
+<tr>
+    <td>${p.item}</td>
+    <td>${p.qty}</td>
+    <td>${p.cost}</td>
+    <td>${total}</td>
+</tr>
+`;
+            });
+
+            document.getElementById("productionTable").innerHTML =
+                prodHTML;
+
+            /* PRODUCT PROFIT */
+            let productProfit = {};
+
+            sales.forEach(s => {
+
+                let saleValue =
+                    s.qty * s.price;
+
+                if (!productProfit[s.item]) {
+                    productProfit[s.item] = 0;
+                }
+
+                productProfit[s.item] += saleValue;
+            });
+
+            productions.forEach(p => {
+
+                let costValue =
+                    p.qty * p.cost;
+
+                if (!productProfit[p.item]) {
+                    productProfit[p.item] = 0;
+                }
+
+                productProfit[p.item] -= costValue;
+            });
+
+            let profitHTML =
+                "<tr><th>Item</th><th>Profit</th></tr>";
+
+            for (let item in productProfit) {
+
+                profitHTML += `
+            <tr>
+                <td>${item}</td>
+                <td>${productProfit[item]}</td>
+            </tr>
+        `;
+            }
+
+            document.getElementById("productProfitTable").innerHTML =
+                profitHTML;
+        }
+
+        function exportExcel() {
+
+            /* WORKBOOK */
+            let wb = XLSX.utils.book_new();
+
+            /* SUMMARY SHEET */
+            let summaryData = [
+                ["KHUSHI HOMECARE REPORT"],
+                [],
+                ["Total Stock",
+                    Object.values(stock)
+                    .reduce((a, b) => a + b, 0)
+                ],
+                ["Total Sales",
+                    sales.reduce((a, b) =>
+                        a + (b.qty * b.price), 0)
+                ],
+                ["Total Production",
+                    productions.reduce((a, b) =>
+                        a + b.qty, 0)
+                ],
+                ["Total Profit",
+                    sales.reduce((a, b) =>
+                        a + (b.qty * b.price), 0) -
+                    productions.reduce((a, b) =>
+                        a + (b.qty * b.cost), 0)
+                ]
+            ];
+
+            let summaryWS =
+                XLSX.utils.aoa_to_sheet(summaryData);
+
+            XLSX.utils.book_append_sheet(
+                wb,
+                summaryWS,
+                "Summary"
+            );
+
+            /* STOCK SHEET */
+            let stockData = [
+                ["Item", "Quantity"]
+            ];
+
+            for (let item in stock) {
+
+                stockData.push([
+                    item,
+                    stock[item]
+                ]);
+            }
+
+            let stockWS =
+                XLSX.utils.aoa_to_sheet(stockData);
+
+            XLSX.utils.book_append_sheet(
+                wb,
+                stockWS,
+                "Stock"
+            );
+
+            /* SALES SHEET */
+            let salesData = [
+                ["Item", "Qty", "Price", "Total"]
+            ];
+
+            sales.forEach(s => {
+
+                salesData.push([
+                    s.item,
+                    s.qty,
+                    s.price,
+                    s.qty * s.price
+                ]);
+            });
+
+            let salesWS =
+                XLSX.utils.aoa_to_sheet(salesData);
+
+            XLSX.utils.book_append_sheet(
+                wb,
+                salesWS,
+                "Sales"
+            );
+
+            /* PRODUCTION SHEET */
+            let prodData = [
+                ["Item", "Qty", "Cost", "User"]
+            ];
+
+            productions.forEach(p => {
+
+                prodData.push([
+                    p.item,
+                    p.qty,
+                    p.cost,
+                    p.user
+                ]);
+            });
+
+            let prodWS =
+                XLSX.utils.aoa_to_sheet(prodData);
+
+            XLSX.utils.book_append_sheet(
+                wb,
+                prodWS,
+                "Production"
+            );
+
+            /* RAW STOCK SHEET */
+            let rawData = [
+                ["Raw Item", "Qty"]
+            ];
+
+            for (let item in rawStock) {
+
+                rawData.push([
+                    item,
+                    rawStock[item]
+                ]);
+            }
+
+            let rawWS =
+                XLSX.utils.aoa_to_sheet(rawData);
+
+            XLSX.utils.book_append_sheet(
+                wb,
+                rawWS,
+                "Raw Stock"
+            );
+
+            /* DOWNLOAD */
+            XLSX.writeFile(
+                wb,
+                "Khushi_Homecare_Report.xlsx"
+            );
+        }
+
+        renderAll();
+        /* ENTER KEY LOGIN */
+        document.addEventListener("keydown", function(event) {
+
+            // Check if login box is visible
+            if (!document.getElementById("loginBox").classList.contains("hidden")) {
+
+                // If Enter key pressed
+                if (event.key === "Enter") {
+                    login();
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
